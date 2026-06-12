@@ -62,8 +62,6 @@ button.plate:hover{border-color:var(--accent);transform:translateY(-3px);
   padding:16px 16px 4px}
 .plate-img img{max-width:92%;max-height:164px;object-fit:contain;
   filter:drop-shadow(0 7px 13px rgba(0,0,0,.5))}
-.plate-img.combo{gap:6px;align-items:flex-end}
-.plate-img.combo img{max-height:140px}
 .plate-body{padding:16px 16px 18px;text-align:center}
 .plate-title{font-size:19px;font-weight:700;color:var(--ink)}
 .plate-model{font-size:14px;color:var(--accent2);margin-top:4px}
@@ -571,22 +569,7 @@ function show(v){
   document.getElementById('view-generator').hidden= (v!=='gen');
   window.scrollTo(0,0);
 }
-document.getElementById('plate-smallbin').onclick=()=>show('gen');
-
-/* Combine plate image: clone the bin photo for S-12414 and S-13536,
-   scaled to their relative lengths (5.5" / 7.5" / 11"). */
-(function(){
-  const wrap=document.getElementById('binPlateImg'), main=document.getElementById('binImgMain');
-  if(!wrap||!main)return;
-  wrap.classList.add('combo');
-  main.style.maxWidth='24%';
-  [['Uline S-12414 bin','30%'],['Uline S-13536 bin','40%']].forEach(([alt,w])=>{
-    const c=main.cloneNode();
-    c.id='';c.alt=alt;c.style.maxWidth=w;
-    wrap.appendChild(c);
-  });
-})();
-document.getElementById('backBtn').onclick=()=>show('menu');
+document.getElementById('plate-smallbin').onclick=()=>show('gen');document.getElementById('backBtn').onclick=()=>show('menu');
 
 const COLS=3, ROWS=7, N=COLS*ROWS;
 const grid=document.getElementById('grid');
