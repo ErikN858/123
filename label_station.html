@@ -110,6 +110,19 @@ textarea{width:100%;min-height:120px;background:#0f1116;color:var(--ink);border:
   border-radius:0 8px 8px 0;color:var(--mut);font-size:14.5px}
 .note b{color:var(--accent2)}
 @media(max-width:760px){.grid{grid-template-columns:1fr}}
+
+/* ---------- SETTINGS PANEL ---------- */
+.sett-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;padding:0 16px 16px}
+.sett-group{display:flex;flex-direction:column;gap:5px}
+.sett-group label{font-size:12px;color:var(--mut);font-family:ui-monospace,monospace;text-transform:uppercase;letter-spacing:.4px}
+.sett-group input[type=number],.sett-group select{background:#0f1116;color:var(--ink);border:1px solid var(--line);
+  border-radius:5px;padding:7px 10px;font-size:14px;font-family:ui-monospace,Consolas,monospace;width:100%}
+.sett-group input[type=number]:focus,.sett-group select:focus{outline:none;border-color:var(--accent)}
+.sett-row{display:flex;gap:10px;padding:0 16px 16px;flex-wrap:wrap;align-items:center}
+.sett-chip{display:inline-flex;align-items:center;gap:7px;background:var(--panel2);
+  border:1px solid var(--line);border-radius:6px;padding:7px 14px;font-family:ui-monospace,monospace;font-size:13px;color:var(--mut)}
+.sett-chip b{color:var(--accent2)}
+.sett-sep{height:1px;background:var(--line);margin:4px 16px}
 </style>
 </head><body>
 
@@ -157,15 +170,11 @@ textarea{width:100%;min-height:120px;background:#0f1116;color:var(--ink);border:
     <div class="hdr-row">
       <button id="backBtn" class="ghost back">&larr; Menu</button>
       <div>
-        <h1>SMALL BIN &middot; <span class="tag">S-12413 LABEL GENERATOR</span></h1>
-        <div class="sub">Letter &bull; landscape &bull; <b>3 &times; 7 = 21 labels</b> &bull; text + scannable Code&nbsp;128 &bull; offline</div>
+        <h1>BIN LABELS &middot; <span class="tag">GENERATOR</span></h1>
+        <div class="sub" id="genSub"></div>
       </div>
     </div>
-    <div class="specs mono">
-      <span>cell <b>3.0086&quot; &times; 1.0420&quot;</b></span>
-      <span>in-margins <b>L/R .135&quot;</b> <b>T .06&quot;</b> <b>B .119&quot;</b></span>
-      <span>border <b>0.5pt</b></span>
-    </div>
+    <div class="specs mono" id="genSpecs"></div>
   </header>
   <div class="wrap">
     <div class="bar">
@@ -173,6 +182,72 @@ textarea{width:100%;min-height:120px;background:#0f1116;color:var(--ink);border:
       <button id="sample" class="ghost">Fill sample</button>
       <button id="clear" class="ghost">Clear all</button>
     </div>
+    <details id="settDetails">
+      <summary>&#9881; Settings &amp; defaults</summary>
+      <div class="sett-grid">
+        <div class="sett-group">
+          <label>Paper size</label>
+          <select id="sPaper">
+            <option value="letter">Letter (8.5 &times; 11&quot;)</option>
+            <option value="tabloid">Tabloid (11 &times; 17&quot;)</option>
+          </select>
+        </div>
+        <div class="sett-group">
+          <label>Label W (in)</label>
+          <input type="number" id="sCellW" step="0.001" min="0.5" max="8">
+        </div>
+        <div class="sett-group">
+          <label>Label H (in)</label>
+          <input type="number" id="sCellH" step="0.001" min="0.3" max="6">
+        </div>
+        <div class="sett-group">
+          <label>Margin L (in)</label>
+          <input type="number" id="sML" step="0.001" min="0" max="1">
+        </div>
+        <div class="sett-group">
+          <label>Margin R (in)</label>
+          <input type="number" id="sMR" step="0.001" min="0" max="1">
+        </div>
+        <div class="sett-group">
+          <label>Margin T (in)</label>
+          <input type="number" id="sMT" step="0.001" min="0" max="1">
+        </div>
+        <div class="sett-group">
+          <label>Margin B (in)</label>
+          <input type="number" id="sMB" step="0.001" min="0" max="1">
+        </div>
+        <div class="sett-group">
+          <label>Border (pt)</label>
+          <input type="number" id="sBorder" step="0.25" min="0" max="4">
+        </div>
+        <div class="sett-group">
+          <label>Barcode type</label>
+          <select id="sBcType">
+            <option value="CODE128">Code 128</option>
+            <option value="CODE39">Code 39</option>
+            <option value="ITF">ITF-14</option>
+          </select>
+        </div>
+        <div class="sett-group">
+          <label>Text font</label>
+          <select id="sFont">
+            <option value="helvetica">Helvetica</option>
+            <option value="times">Times New Roman</option>
+            <option value="courier">Courier</option>
+            <option value="helvetica-narrow">Arial Narrow</option>
+            <option value="georgia">Georgia</option>
+          </select>
+        </div>
+      </div>
+      <div class="sett-sep"></div>
+      <div class="sett-row">
+        <span class="sett-chip">Orientation: <b id="sOrient">—</b></span>
+        <span class="sett-chip">Labels: <b id="sCount">—</b></span>
+        <button id="saveDef" class="primary" style="margin-left:auto">&#10003; Save as default</button>
+        <button id="clearDef" class="ghost">&#10005; Clear defaults</button>
+      </div>
+    </details>
+
     <details>
       <summary>Bulk import (paste a list)</summary>
       <div class="imp">
@@ -571,86 +646,204 @@ function show(v){
 }
 document.getElementById('plate-smallbin').onclick=()=>show('gen');document.getElementById('backBtn').onclick=()=>show('menu');
 
-const COLS=3, ROWS=7, N=COLS*ROWS;
-const grid=document.getElementById('grid');
+/* ── DEFAULTS & SETTINGS ─────────────────────────────────── */
+const FACTORY={cellW:3.0086,cellH:1.0420,mL:0.135,mR:0.135,mT:0.06,mB:0.1190,
+  border:0.5,paper:'letter',bcType:'CODE128',font:'helvetica'};
+const PAGES={letter:[11,8.5],tabloid:[17,11]};
+const PG_MX=0.3, PG_MY_TOP=0.55, PG_MY_BOT=0.3;
+const FONT_MAP={'helvetica':'helvetica','times':'times','courier':'courier',
+  'helvetica-narrow':'helvetica','georgia':'times'};
+const FONT_CSS={'helvetica':'Arial,Helvetica,sans-serif','times':'Times New Roman,serif',
+  'courier':'Courier New,monospace','helvetica-narrow':'Arial Narrow,Arial,sans-serif',
+  'georgia':'Georgia,serif'};
 
+function loadSaved(){try{const s=JSON.parse(localStorage.getItem('labelDefaults')||'null');
+  return s?{...FACTORY,...s}:{...FACTORY};}catch(e){return{...FACTORY};}}
+
+let S=loadSaved();
+let COLS,ROWS,N,G,PW,PH,ORIENT;
+
+function calcLayout(s){
+  const [pw,ph]=PAGES[s.paper]||PAGES.letter;
+  const avWl=pw-2*PG_MX, avHl=ph-PG_MY_TOP-PG_MY_BOT;
+  const avWp=ph-2*PG_MX, avHp=pw-PG_MY_TOP-PG_MY_BOT;
+  const cL=Math.max(1,Math.floor(avWl/s.cellW)), rL=Math.max(1,Math.floor(avHl/s.cellH));
+  const cP=Math.max(1,Math.floor(avWp/s.cellW)), rP=Math.max(1,Math.floor(avHp/s.cellH));
+  if(cL*rL>=cP*rP) return{cols:cL,rows:rL,orient:'landscape',pw,ph};
+  return{cols:cP,rows:rP,orient:'portrait',pw:ph,ph:pw};
+}
+
+function applyLayout(s){
+  const lay=calcLayout(s);
+  COLS=lay.cols; ROWS=lay.rows; N=COLS*ROWS;
+  G={cellW:s.cellW,cellH:s.cellH,mL:s.mL,mR:s.mR,mT:s.mT,mB:s.mB};
+  PW=lay.pw; PH=lay.ph; ORIENT=lay.orient;
+  const paperName=s.paper[0].toUpperCase()+s.paper.slice(1);
+  const sub=document.getElementById('genSub');
+  const specs=document.getElementById('genSpecs');
+  if(sub) sub.innerHTML=paperName+' &bull; '+lay.orient+' &bull; <b>'+COLS+'&times;'+ROWS+'='+N+' labels</b> &bull; '+s.bcType+' &bull; offline';
+  if(specs) specs.innerHTML='<span>cell <b>'+s.cellW+'" &times; '+s.cellH+'"</b></span>'+
+    '<span>margins <b>L '+s.mL+'" R '+s.mR+'" T '+s.mT+'" B '+s.mB+'"</b></span>'+
+    '<span>border <b>'+s.border+'pt</b></span>';
+  const oi=document.getElementById('sOrient'), ci=document.getElementById('sCount');
+  if(oi) oi.textContent=lay.orient; if(ci) ci.textContent=COLS+'×'+ROWS+'='+N;
+}
+
+function populateUI(s){
+  ['CellW','CellH','ML','MR','MT','MB','Border'].forEach(k=>{
+    const el=document.getElementById('s'+k); if(el) el.value=s[k.toLowerCase()]??s[k];
+  });
+  // direct id matches
+  document.getElementById('sCellW').value=s.cellW;
+  document.getElementById('sCellH').value=s.cellH;
+  document.getElementById('sML').value=s.mL;
+  document.getElementById('sMR').value=s.mR;
+  document.getElementById('sMT').value=s.mT;
+  document.getElementById('sMB').value=s.mB;
+  document.getElementById('sBorder').value=s.border;
+  document.getElementById('sPaper').value=s.paper;
+  document.getElementById('sBcType').value=s.bcType;
+  document.getElementById('sFont').value=s.font;
+}
+
+function settingsFromUI(){
+  return{
+    cellW:parseFloat(document.getElementById('sCellW').value)||FACTORY.cellW,
+    cellH:parseFloat(document.getElementById('sCellH').value)||FACTORY.cellH,
+    mL:parseFloat(document.getElementById('sML').value)||0,
+    mR:parseFloat(document.getElementById('sMR').value)||0,
+    mT:parseFloat(document.getElementById('sMT').value)||0,
+    mB:parseFloat(document.getElementById('sMB').value)||0,
+    border:parseFloat(document.getElementById('sBorder').value)||0,
+    paper:document.getElementById('sPaper').value,
+    bcType:document.getElementById('sBcType').value,
+    font:document.getElementById('sFont').value,
+  };
+}
+
+/* ── BARCODE PREVIEW ─────────────────────────────────────── */
 function renderPreview(svg,val){
   svg.innerHTML='';
   const wrap=svg.parentElement;
   wrap.querySelector('.empty')?.remove();
-  if(!val){ const d=document.createElement('div'); d.className='empty'; d.textContent='no barcode';
-    wrap.appendChild(d); svg.style.display='none'; return; }
+  if(!val){const d=document.createElement('div');d.className='empty';d.textContent='no barcode';
+    wrap.appendChild(d);svg.style.display='none';return;}
   svg.style.display='block';
-  try{ JsBarcode(svg,val,{format:'CODE128',displayValue:false,margin:4,height:46,width:2,background:'#ffffff'}); }
-  catch(e){ svg.innerHTML=''; }
+  try{JsBarcode(svg,val,{format:S.bcType,displayValue:false,margin:4,height:46,width:2,background:'#ffffff'});}
+  catch(e){svg.innerHTML='';const d=document.createElement('div');d.className='empty';d.textContent='invalid value';wrap.appendChild(d);}
 }
-for(let i=0;i<N;i++){
-  const cell=document.createElement('div'); cell.className='cell';
-  cell.innerHTML=`<div class="n mono">${String(i+1).padStart(2,'0')}</div>
-    <input class="txt" placeholder="Text (top line)">
-    <div class="preview"><svg class="bc"></svg></div>
-    <input class="val" placeholder="Barcode value (Code 128)">`;
-  grid.appendChild(cell);
-  const val=cell.querySelector('.val'), svg=cell.querySelector('.bc');
-  val.addEventListener('input',()=>renderPreview(svg,val.value.trim()));
-  renderPreview(svg,'');
-}
-function cells(){ return [...document.querySelectorAll('.cell')].map(c=>({
-  text:c.querySelector('.txt').value.trim(), val:c.querySelector('.val').value.trim() })); }
 
+/* ── GRID BUILD ──────────────────────────────────────────── */
+const gridEl=document.getElementById('grid');
+
+function rebuildGrid(keepData){
+  const old=keepData?[...gridEl.querySelectorAll('.cell')].map(c=>({
+    text:c.querySelector('.txt').value,val:c.querySelector('.val').value})):[];
+  gridEl.style.gridTemplateColumns='repeat('+COLS+',1fr)';
+  gridEl.innerHTML='';
+  const ff=FONT_CSS[S.font]||FONT_CSS.helvetica;
+  for(let i=0;i<N;i++){
+    const cell=document.createElement('div');cell.className='cell';
+    cell.innerHTML=`<div class="n mono">${String(i+1).padStart(2,'0')}</div>
+      <input class="txt" placeholder="Text (top line)" style="font-family:${ff}">
+      <div class="preview"><svg class="bc"></svg></div>
+      <input class="val" placeholder="Barcode value (${S.bcType})">`;
+    gridEl.appendChild(cell);
+    const d=old[i]||{text:'',val:''};
+    const ti=cell.querySelector('.txt'),vi=cell.querySelector('.val'),sv=cell.querySelector('.bc');
+    ti.value=d.text;vi.value=d.val;
+    vi.addEventListener('input',()=>renderPreview(sv,vi.value.trim()));
+    renderPreview(sv,d.val.trim());
+  }
+}
+
+function cells(){return[...gridEl.querySelectorAll('.cell')].map(c=>({
+  text:c.querySelector('.txt').value.trim(),val:c.querySelector('.val').value.trim()}));}
+
+/* ── SETTINGS EVENTS ─────────────────────────────────────── */
+['sCellW','sCellH','sML','sMR','sMT','sMB','sBorder','sPaper','sBcType','sFont'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener('change',()=>{S=settingsFromUI();applyLayout(S);rebuildGrid(true);});
+});
+
+document.getElementById('saveDef').onclick=()=>{
+  S=settingsFromUI();
+  localStorage.setItem('labelDefaults',JSON.stringify(S));
+  applyLayout(S);rebuildGrid(true);
+  const btn=document.getElementById('saveDef');
+  btn.textContent='✓ Saved!';setTimeout(()=>btn.innerHTML='&#10003; Save as default',1500);
+};
+
+document.getElementById('clearDef').onclick=()=>{
+  localStorage.removeItem('labelDefaults');
+  S={...FACTORY};populateUI(S);applyLayout(S);rebuildGrid(true);
+  const btn=document.getElementById('clearDef');
+  btn.textContent='✓ Cleared';setTimeout(()=>btn.innerHTML='&#10005; Clear defaults',1500);
+};
+
+/* ── TOOLBAR BUTTONS ─────────────────────────────────────── */
 document.getElementById('sample').onclick=()=>{
-  document.querySelectorAll('.cell').forEach((c,i)=>{
+  gridEl.querySelectorAll('.cell').forEach((c,i)=>{
     c.querySelector('.txt').value='PART A-'+(100+i);
     const v='A'+(100+i)+'-'+String(i+1).padStart(3,'0');
-    c.querySelector('.val').value=v; renderPreview(c.querySelector('.bc'),v);
+    c.querySelector('.val').value=v;renderPreview(c.querySelector('.bc'),v);
   });
 };
 document.getElementById('clear').onclick=()=>{
-  document.querySelectorAll('.cell').forEach(c=>{
-    c.querySelector('.txt').value=''; c.querySelector('.val').value='';
+  gridEl.querySelectorAll('.cell').forEach(c=>{
+    c.querySelector('.txt').value='';c.querySelector('.val').value='';
     renderPreview(c.querySelector('.bc'),'');
   });
 };
 document.getElementById('apply').onclick=()=>{
   const lines=document.getElementById('bulk').value.split(/\r?\n/);
-  const els=document.querySelectorAll('.cell'); let k=0;
-  for(const line of lines){ if(k>=N)break; if(line.trim()==='')continue;
-    let text='',val=''; const m=line.split(/\t|\|/);
-    if(m.length>=2){text=m[0].trim();val=m.slice(1).join('|').trim();} else {val=line.trim();}
-    const c=els[k]; c.querySelector('.txt').value=text; c.querySelector('.val').value=val;
-    renderPreview(c.querySelector('.bc'),val); k++;
-  }
+  const els=gridEl.querySelectorAll('.cell');let k=0;
+  for(const line of lines){if(k>=N)break;if(!line.trim())continue;
+    let text='',val='';const m=line.split(/\t|\|/);
+    if(m.length>=2){text=m[0].trim();val=m.slice(1).join('|').trim();}else{val=line.trim();}
+    const c=els[k];c.querySelector('.txt').value=text;c.querySelector('.val').value=val;
+    renderPreview(c.querySelector('.bc'),val);k++;}
 };
 
-const G={cellW:3.0086,cellH:1.0420,mL:0.135,mR:0.135,mT:0.06,mB:0.1190};
-const PW=11,PH=8.5,tableW=G.cellW*COLS,tableH=G.cellH*ROWS,x0=(PW-tableW)/2,y0=0.55;
-function barcodePNG(val){const cv=document.createElement('canvas');
-  JsBarcode(cv,val,{format:'CODE128',displayValue:false,margin:6,height:200,width:4,background:'#ffffff'});
-  return {url:cv.toDataURL('image/png'),w:cv.width,h:cv.height};}
+/* ── PDF GENERATION ──────────────────────────────────────── */
+function barcodePNG(val){
+  const cv=document.createElement('canvas');
+  try{JsBarcode(cv,val,{format:S.bcType,displayValue:false,margin:6,height:200,width:4,background:'#ffffff'});}
+  catch(e){return null;}
+  return{url:cv.toDataURL('image/png'),w:cv.width,h:cv.height};
+}
 function fitFont(doc,t,maxW,s){doc.setFontSize(s);while(doc.getTextWidth(t)>maxW&&s>5){s-=0.5;doc.setFontSize(s);}return s;}
 
 document.getElementById('pdf').onclick=()=>{
-  const {jsPDF}=window.jspdf;
-  const doc=new jsPDF({unit:'in',format:[PW,PH],orientation:'landscape'});
-  doc.setLineWidth(0.5/72);doc.setDrawColor(0);
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'in',format:[PW,PH],orientation:ORIENT});
+  const pdfFont=FONT_MAP[S.font]||'helvetica';
+  const bw=S.border/72;
+  const tableW=G.cellW*COLS,tableH=G.cellH*ROWS;
+  const x0=(PW-tableW)/2,y0=PG_MY_TOP;
+  doc.setLineWidth(bw||0.5/72);doc.setDrawColor(0);
   for(let i=0;i<=COLS;i++){const x=x0+i*G.cellW;doc.line(x,y0,x,y0+tableH);}
   for(let j=0;j<=ROWS;j++){const y=y0+j*G.cellH;doc.line(x0,y,x0+tableW,y);}
   const data=cells();
   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
-    const d=data[r*COLS+c]; if(!d.text&&!d.val)continue;
+    const d=data[r*COLS+c];if(!d.text&&!d.val)continue;
     const left=x0+c*G.cellW,top=y0+r*G.cellH;
     const il=left+G.mL,ir=left+G.cellW-G.mR,it=top+G.mT,ib=top+G.cellH-G.mB,iw=ir-il,cx=il+iw/2;
     let barsTop=it,barsBot=ib;
-    if(d.text){doc.setFont('helvetica','bold');const s=fitFont(doc,d.text,iw,9.5);
+    if(d.text){doc.setFont(pdfFont,'bold');const s=fitFont(doc,d.text,iw,9.5);
       doc.text(d.text,cx,it+s/72*0.82,{align:'center'});barsTop=it+s/72+0.03;}
-    if(d.val){doc.setFont('helvetica','normal');const s=fitFont(doc,d.val,iw,8.5);
+    if(d.val){doc.setFont(pdfFont,'normal');const s=fitFont(doc,d.val,iw,8.5);
       doc.text(d.val,cx,ib-0.02,{align:'center'});barsBot=ib-s/72-0.03;
-      const img=barcodePNG(d.val);const availH=barsBot-barsTop,availW=iw*0.96;
-      const sc=Math.min(availW/img.w,availH/img.h),dw=img.w*sc,dh=img.h*sc;
-      doc.addImage(img.url,'PNG',cx-dw/2,barsTop+(availH-dh)/2,dw,dh);}
+      const img=barcodePNG(d.val);if(img){const availH=barsBot-barsTop,availW=iw*0.96;
+        const sc=Math.min(availW/img.w,availH/img.h),dw=img.w*sc,dh=img.h*sc;
+        doc.addImage(img.url,'PNG',cx-dw/2,barsTop+(availH-dh)/2,dw,dh);}}
   }
-  doc.save('S-12413_smallbin_labels.pdf');
+  doc.save('bin_labels.pdf');
 };
+/* ── INIT ─────────────────────────────────────────────────── */
+populateUI(S);
+applyLayout(S);
+rebuildGrid(false);
 show('menu');
 </script>
 </body></html>
