@@ -139,6 +139,21 @@ textarea{width:100%;min-height:120px;background:#0f1116;color:var(--ink);border:
 .lbl-box .lp-bc{flex:1;display:flex;align-items:center;justify-content:center;width:100%;min-height:0;overflow:hidden}
 .lbl-box .lp-bc svg{max-width:100%;max-height:100%}
 .lbl-box .lp-val{color:#000;text-align:center;line-height:1;white-space:nowrap;width:100%;overflow:hidden}
+.sett-pct-row{display:flex;gap:8px;padding:0 16px 12px;align-items:flex-end;flex-wrap:wrap}
+.sett-pct-group{display:flex;flex-direction:column;gap:4px;flex:1;min-width:100px}
+.sett-pct-group label{font-size:12px;color:var(--mut);font-family:ui-monospace,monospace;text-transform:uppercase;letter-spacing:.4px}
+.sett-pct-group .pct-row{display:flex;gap:6px;align-items:center}
+.sett-pct-group input[type=range]{flex:1;accent-color:var(--accent)}
+.sett-pct-group .pct-val{font-family:ui-monospace,monospace;font-size:12px;color:var(--accent2);min-width:32px;text-align:right}
+.pct-total{font-family:ui-monospace,monospace;font-size:12px;padding:3px 8px;border-radius:4px;
+  border:1px solid var(--line);background:#0f1116;color:var(--mut)}
+.pct-total.ok{color:var(--ok);border-color:var(--ok)}
+.pct-total.err{color:#ff5555;border-color:#ff5555}
+.hist-row{display:flex;gap:8px;padding:4px 16px 12px;flex-wrap:wrap;align-items:center}
+.hist-row label{font-size:12px;color:var(--mut);font-family:ui-monospace,monospace;text-transform:uppercase;letter-spacing:.4px;flex:0 0 auto}
+.hist-row select{background:#0f1116;color:var(--ink);border:1px solid var(--line);border-radius:5px;
+  padding:6px 10px;font-size:13px;font-family:ui-monospace,monospace;flex:1;min-width:180px}
+.hist-row select:focus{outline:none;border-color:var(--accent)}
 </style>
 </head><body>
 
@@ -245,8 +260,8 @@ textarea{width:100%;min-height:120px;background:#0f1116;color:var(--ink);border:
           </select>
         </div>
         <div class="sett-group">
-          <label>Text font</label>
-          <select id="sFont">
+          <label>Name font</label>
+          <select id="sFontName">
             <option value="helvetica">Helvetica</option>
             <option value="times">Times New Roman</option>
             <option value="courier">Courier</option>
@@ -254,17 +269,57 @@ textarea{width:100%;min-height:120px;background:#0f1116;color:var(--ink);border:
             <option value="georgia">Georgia</option>
           </select>
         </div>
+        <div class="sett-group">
+          <label>Code font</label>
+          <select id="sFontCode">
+            <option value="helvetica">Helvetica</option>
+            <option value="times">Times New Roman</option>
+            <option value="courier">Courier</option>
+            <option value="helvetica-narrow">Arial Narrow</option>
+            <option value="georgia">Georgia</option>
+          </select>
+        </div>
+        <div class="sett-group">
+          <label>Gap name→bc (in)</label>
+          <input type="number" id="sGapNB" step="0.005" min="0" max="0.5">
+        </div>
+        <div class="sett-group">
+          <label>Gap bc→code (in)</label>
+          <input type="number" id="sGapBC" step="0.005" min="0" max="0.5">
+        </div>
+      </div>
+      <div class="sett-sep"></div>
+      <div class="sett-pct-row">
+        <div class="sett-pct-group">
+          <label>Name %</label>
+          <div class="pct-row"><input type="range" id="sPctName" min="0" max="100" step="1"><span class="pct-val" id="vPctName">20%</span></div>
+        </div>
+        <div class="sett-pct-group">
+          <label>Barcode %</label>
+          <div class="pct-row"><input type="range" id="sPctBc" min="0" max="100" step="1"><span class="pct-val" id="vPctBc">55%</span></div>
+        </div>
+        <div class="sett-pct-group">
+          <label>Code %</label>
+          <div class="pct-row"><input type="range" id="sPctCode" min="0" max="100" step="1"><span class="pct-val" id="vPctCode">25%</span></div>
+        </div>
+        <span class="pct-total" id="pctTotal">100%</span>
+        <button id="autoFit" class="ghost" style="font-size:12px;padding:6px 12px">&#9889; Auto-fit</button>
       </div>
       <div class="lbl-pv-wrap">
         <div class="lbl-pv-title">Live label preview &mdash; how one label will print</div>
         <div class="lbl-pv-stage"><div id="lblPreview"></div></div>
       </div>
       <div class="sett-sep"></div>
+      <div class="hist-row">
+        <label>History</label>
+        <select id="sHist"><option value="">— select a previous save to restore —</option></select>
+        <button id="restoreHist" class="ghost" style="font-size:12px;padding:6px 12px">&#8634; Restore</button>
+      </div>
+      <div class="sett-sep"></div>
       <div class="sett-row">
         <span class="sett-chip">Orientation: <b id="sOrient">—</b></span>
         <span class="sett-chip">Labels: <b id="sCount">—</b></span>
         <button id="saveDef" class="primary" style="margin-left:auto">&#10003; Save as default</button>
-        <button id="revertDef" class="ghost">&#8634; Revert to saved</button>
         <button id="clearDef" class="ghost">&#10005; Clear defaults</button>
       </div>
     </details>
@@ -669,7 +724,10 @@ document.getElementById('plate-smallbin').onclick=()=>show('gen');document.getEl
 
 /* ── DEFAULTS & SETTINGS ─────────────────────────────────── */
 const FACTORY={cellW:3.0086,cellH:1.0420,mL:0.135,mR:0.135,mT:0.06,mB:0.1190,
-  border:0.5,paper:'letter',bcType:'CODE128',font:'helvetica'};
+  border:0.5,paper:'letter',bcType:'CODE128',
+  fontName:'helvetica',fontCode:'helvetica',
+  gapNB:0.02,gapBC:0.02,
+  pctName:20,pctBc:55,pctCode:25};
 const PAGES={letter:[11,8.5],tabloid:[17,11]};
 const PG_MX=0.3, PG_MY_TOP=0.55, PG_MY_BOT=0.3;
 const FONT_MAP={'helvetica':'helvetica','times':'times','courier':'courier',
@@ -677,10 +735,10 @@ const FONT_MAP={'helvetica':'helvetica','times':'times','courier':'courier',
 const FONT_CSS={'helvetica':'Arial,Helvetica,sans-serif','times':'Times New Roman,serif',
   'courier':'Courier New,monospace','helvetica-narrow':'Arial Narrow,Arial,sans-serif',
   'georgia':'Georgia,serif'};
+const HIST_KEY='labelHistory', HIST_MAX=10;
 
 function loadSaved(){try{const s=JSON.parse(localStorage.getItem('labelDefaults')||'null');
   return s?{...FACTORY,...s}:{...FACTORY};}catch(e){return{...FACTORY};}}
-function hasSaved(){return !!localStorage.getItem('labelDefaults');}
 function savedDateLabel(){
   const t=localStorage.getItem('labelDefaultsSavedAt');
   if(!t) return 'not saved yet';
@@ -688,6 +746,27 @@ function savedDateLabel(){
   return 'saved '+d.toLocaleDateString()+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 }
 function sampleVal(type){return type==='ITF'?'12345678':'A100-001';}
+
+/* ── HISTORY ─────────────────────────────────────────────── */
+function loadHistory(){try{return JSON.parse(localStorage.getItem(HIST_KEY)||'[]');}catch(e){return[];}}
+function pushHistory(s){
+  const h=loadHistory();
+  h.unshift({ts:Date.now(),s:{...s}});
+  if(h.length>HIST_MAX)h.length=HIST_MAX;
+  localStorage.setItem(HIST_KEY,JSON.stringify(h));
+}
+function clearHistory(){localStorage.removeItem(HIST_KEY);}
+function refreshHistoryUI(){
+  const sel=document.getElementById('sHist');if(!sel)return;
+  const h=loadHistory();
+  sel.innerHTML='<option value="">— select a previous save to restore —</option>';
+  h.forEach((e,i)=>{
+    const d=new Date(e.ts);
+    const label=d.toLocaleDateString()+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+
+      ' — '+e.s.paper+' '+e.s.bcType+' '+e.s.cellW+'"×'+e.s.cellH+'"';
+    const o=document.createElement('option');o.value=i;o.textContent=label;sel.appendChild(o);
+  });
+}
 
 let S=loadSaved();
 let COLS,ROWS,N,G,PW,PH,ORIENT;
@@ -719,33 +798,37 @@ function applyLayout(s){
   renderLabelPreview();
 }
 
-/* live WYSIWYG preview of a single label using current settings */
+/* ── LIVE LABEL PREVIEW ──────────────────────────────────── */
 function renderLabelPreview(){
   const host=document.getElementById('lblPreview'); if(!host)return;
-  const ppi=Math.min(360/S.cellW, 150/S.cellH);
+  const ppi=Math.min(380/S.cellW,160/S.cellH);
   const w=S.cellW*ppi, h=S.cellH*ppi;
   const bpx=Math.max(1,S.border/72*ppi);
-  const box=document.createElement('div'); box.className='lbl-box';
-  box.style.width=w+'px'; box.style.height=h+'px';
-  box.style.borderWidth=bpx+'px';
-  box.style.paddingLeft=(S.mL*ppi)+'px'; box.style.paddingRight=(S.mR*ppi)+'px';
-  box.style.paddingTop=(S.mT*ppi)+'px'; box.style.paddingBottom=(S.mB*ppi)+'px';
-  box.style.fontFamily=FONT_CSS[S.font]||FONT_CSS.helvetica;
+  const innerH=(S.cellH-S.mT-S.mB)*ppi;
+  const gNBpx=S.gapNB*ppi, gBCpx=S.gapBC*ppi;
+  const totalGaps=gNBpx+gBCpx;
+  const avail=innerH-totalGaps;
+  const nameH=avail*S.pctName/100, bcH=avail*S.pctBc/100, codeH=avail*S.pctCode/100;
   const sv=sampleVal(S.bcType);
-  box.innerHTML='<div class="lp-text">PART A-100</div>'+
-    '<div class="lp-bc"><svg></svg></div>'+
-    '<div class="lp-val">'+sv+'</div>';
-  box.querySelector('.lp-text').style.fontSize=Math.max(6,0.15*ppi)+'px';
-  box.querySelector('.lp-val').style.fontSize=Math.max(5,0.11*ppi)+'px';
+  const box=document.createElement('div'); box.className='lbl-box';
+  box.style.cssText='width:'+w+'px;height:'+h+'px;border-width:'+bpx+'px;'+
+    'padding:'+S.mT*ppi+'px '+S.mR*ppi+'px '+S.mB*ppi+'px '+S.mL*ppi+'px;'+
+    'flex-direction:column;gap:0;justify-content:flex-start;';
+  const ffN=FONT_CSS[S.fontName]||FONT_CSS.helvetica;
+  const ffC=FONT_CSS[S.fontCode]||FONT_CSS.helvetica;
+  box.innerHTML=
+    '<div class="lp-text" style="height:'+nameH+'px;font-family:'+ffN+';font-size:'+Math.max(6,nameH*0.72)+'px;display:flex;align-items:center;justify-content:center">PART A-100</div>'+
+    '<div style="height:'+gNBpx+'px;flex:0 0 auto"></div>'+
+    '<div class="lp-bc" style="height:'+bcH+'px;flex:0 0 auto"><svg></svg></div>'+
+    '<div style="height:'+gBCpx+'px;flex:0 0 auto"></div>'+
+    '<div class="lp-val" style="height:'+codeH+'px;font-family:'+ffC+';font-size:'+Math.max(5,codeH*0.72)+'px;display:flex;align-items:center;justify-content:center">'+sv+'</div>';
   host.innerHTML=''; host.appendChild(box);
-  try{JsBarcode(box.querySelector('.lp-bc svg'),sv,{format:S.bcType,displayValue:false,margin:0,height:40,width:2,background:'#ffffff'});}catch(e){}
+  try{JsBarcode(box.querySelector('.lp-bc svg'),sv,
+    {format:S.bcType,displayValue:false,margin:0,height:Math.max(8,bcH-2),width:2,background:'#ffffff'});}catch(e){}
 }
 
+/* ── POPULATE / READ UI ──────────────────────────────────── */
 function populateUI(s){
-  ['CellW','CellH','ML','MR','MT','MB','Border'].forEach(k=>{
-    const el=document.getElementById('s'+k); if(el) el.value=s[k.toLowerCase()]??s[k];
-  });
-  // direct id matches
   document.getElementById('sCellW').value=s.cellW;
   document.getElementById('sCellH').value=s.cellH;
   document.getElementById('sML').value=s.mL;
@@ -755,7 +838,23 @@ function populateUI(s){
   document.getElementById('sBorder').value=s.border;
   document.getElementById('sPaper').value=s.paper;
   document.getElementById('sBcType').value=s.bcType;
-  document.getElementById('sFont').value=s.font;
+  document.getElementById('sFontName').value=s.fontName||FACTORY.fontName;
+  document.getElementById('sFontCode').value=s.fontCode||FACTORY.fontCode;
+  document.getElementById('sGapNB').value=s.gapNB??FACTORY.gapNB;
+  document.getElementById('sGapBC').value=s.gapBC??FACTORY.gapBC;
+  const pN=s.pctName??FACTORY.pctName, pB=s.pctBc??FACTORY.pctBc, pC=s.pctCode??FACTORY.pctCode;
+  document.getElementById('sPctName').value=pN; document.getElementById('vPctName').textContent=pN+'%';
+  document.getElementById('sPctBc').value=pB;   document.getElementById('vPctBc').textContent=pB+'%';
+  document.getElementById('sPctCode').value=pC;  document.getElementById('vPctCode').textContent=pC+'%';
+  updatePctTotal();
+}
+
+function updatePctTotal(){
+  const tot=(+document.getElementById('sPctName').value||0)+
+             (+document.getElementById('sPctBc').value||0)+
+             (+document.getElementById('sPctCode').value||0);
+  const el=document.getElementById('pctTotal');
+  el.textContent=tot+'%'; el.className='pct-total '+(tot===100?'ok':'err');
 }
 
 function settingsFromUI(){
@@ -769,11 +868,17 @@ function settingsFromUI(){
     border:parseFloat(document.getElementById('sBorder').value)||0,
     paper:document.getElementById('sPaper').value,
     bcType:document.getElementById('sBcType').value,
-    font:document.getElementById('sFont').value,
+    fontName:document.getElementById('sFontName').value,
+    fontCode:document.getElementById('sFontCode').value,
+    gapNB:parseFloat(document.getElementById('sGapNB').value)||0,
+    gapBC:parseFloat(document.getElementById('sGapBC').value)||0,
+    pctName:+document.getElementById('sPctName').value||20,
+    pctBc:+document.getElementById('sPctBc').value||55,
+    pctCode:+document.getElementById('sPctCode').value||25,
   };
 }
 
-/* ── BARCODE PREVIEW ─────────────────────────────────────── */
+/* ── BARCODE PREVIEW (grid cells) ───────────────────────── */
 function renderPreview(svg,val){
   svg.innerHTML='';
   const wrap=svg.parentElement;
@@ -782,7 +887,8 @@ function renderPreview(svg,val){
     wrap.appendChild(d);svg.style.display='none';return;}
   svg.style.display='block';
   try{JsBarcode(svg,val,{format:S.bcType,displayValue:false,margin:4,height:46,width:2,background:'#ffffff'});}
-  catch(e){svg.innerHTML='';const d=document.createElement('div');d.className='empty';d.textContent='invalid value';wrap.appendChild(d);}
+  catch(e){svg.innerHTML='';const d=document.createElement('div');d.className='empty';
+    d.textContent='invalid';wrap.appendChild(d);}
 }
 
 /* ── GRID BUILD ──────────────────────────────────────────── */
@@ -793,13 +899,14 @@ function rebuildGrid(keepData){
     text:c.querySelector('.txt').value,val:c.querySelector('.val').value})):[];
   gridEl.style.gridTemplateColumns='repeat('+COLS+',1fr)';
   gridEl.innerHTML='';
-  const ff=FONT_CSS[S.font]||FONT_CSS.helvetica;
+  const ffN=FONT_CSS[S.fontName]||FONT_CSS.helvetica;
+  const ffC=FONT_CSS[S.fontCode]||FONT_CSS.helvetica;
   for(let i=0;i<N;i++){
     const cell=document.createElement('div');cell.className='cell';
     cell.innerHTML=`<div class="n mono">${String(i+1).padStart(2,'0')}</div>
-      <input class="txt" placeholder="Text (top line)" style="font-family:${ff}">
+      <input class="txt" placeholder="Position name" style="font-family:${ffN};font-weight:700">
       <div class="preview"><svg class="bc"></svg></div>
-      <input class="val" placeholder="Barcode value (${S.bcType})">`;
+      <input class="val" placeholder="Barcode value (${S.bcType})" style="font-family:${ffC}">`;
     gridEl.appendChild(cell);
     const d=old[i]||{text:'',val:''};
     const ti=cell.querySelector('.txt'),vi=cell.querySelector('.val'),sv=cell.querySelector('.bc');
@@ -813,31 +920,59 @@ function cells(){return[...gridEl.querySelectorAll('.cell')].map(c=>({
   text:c.querySelector('.txt').value.trim(),val:c.querySelector('.val').value.trim()}));}
 
 /* ── SETTINGS EVENTS ─────────────────────────────────────── */
-['sCellW','sCellH','sML','sMR','sMT','sMB','sBorder','sPaper','sBcType','sFont'].forEach(id=>{
+['sCellW','sCellH','sML','sMR','sMT','sMB','sBorder','sPaper','sBcType','sFontName','sFontCode','sGapNB','sGapBC'].forEach(id=>{
   const el=document.getElementById(id);
   if(el) el.addEventListener('change',()=>{S=settingsFromUI();applyLayout(S);rebuildGrid(true);});
 });
 
+['sPctName','sPctBc','sPctCode'].forEach(id=>{
+  const el=document.getElementById(id); if(!el)return;
+  el.addEventListener('input',()=>{
+    document.getElementById('v'+id.slice(1)).textContent=el.value+'%';
+    updatePctTotal();
+    S=settingsFromUI();applyLayout(S);
+  });
+});
+
+document.getElementById('autoFit').onclick=()=>{
+  // distribute: name 20%, code 20%, barcode gets the rest (capped so all ≥10%)
+  let pN=20,pC=20,pB=60;
+  document.getElementById('sPctName').value=pN; document.getElementById('vPctName').textContent=pN+'%';
+  document.getElementById('sPctCode').value=pC;  document.getElementById('vPctCode').textContent=pC+'%';
+  document.getElementById('sPctBc').value=pB;    document.getElementById('vPctBc').textContent=pB+'%';
+  updatePctTotal();
+  S=settingsFromUI();applyLayout(S);rebuildGrid(true);
+};
+
 document.getElementById('saveDef').onclick=()=>{
+  const existing=loadSaved();
+  pushHistory(existing);             // save current default to history before overwriting
   S=settingsFromUI();
   localStorage.setItem('labelDefaults',JSON.stringify(S));
   localStorage.setItem('labelDefaultsSavedAt',Date.now());
+  refreshHistoryUI();
   applyLayout(S);rebuildGrid(true);
   const btn=document.getElementById('saveDef');
   btn.textContent='✓ Saved!';setTimeout(()=>btn.innerHTML='&#10003; Save as default',1500);
 };
 
-document.getElementById('revertDef').onclick=()=>{
-  const btn=document.getElementById('revertDef');
-  if(!hasSaved()){btn.textContent='✓ Nothing saved';setTimeout(()=>btn.innerHTML='&#8634; Revert to saved',1500);return;}
-  S=loadSaved();populateUI(S);applyLayout(S);rebuildGrid(true);
-  btn.textContent='✓ Reverted';setTimeout(()=>btn.innerHTML='&#8634; Revert to saved',1500);
+document.getElementById('restoreHist').onclick=()=>{
+  const sel=document.getElementById('sHist');
+  if(!sel.value)return;
+  const h=loadHistory();
+  const entry=h[+sel.value]; if(!entry)return;
+  S={...FACTORY,...entry.s};
+  populateUI(S);applyLayout(S);rebuildGrid(true);
+  const btn=document.getElementById('restoreHist');
+  btn.textContent='✓ Restored';setTimeout(()=>btn.innerHTML='&#8634; Restore',1500);
 };
 
 document.getElementById('clearDef').onclick=()=>{
   localStorage.removeItem('labelDefaults');
   localStorage.removeItem('labelDefaultsSavedAt');
+  clearHistory();
   S={...FACTORY};populateUI(S);applyLayout(S);rebuildGrid(true);
+  refreshHistoryUI();
   const btn=document.getElementById('clearDef');
   btn.textContent='✓ Cleared';setTimeout(()=>btn.innerHTML='&#10005; Clear defaults',1500);
 };
@@ -867,9 +1002,10 @@ document.getElementById('apply').onclick=()=>{
 };
 
 /* ── PDF GENERATION ──────────────────────────────────────── */
-function barcodePNG(val){
+function barcodePNG(val,heightIn){
+  const pxH=Math.max(40,Math.round(heightIn*300));
   const cv=document.createElement('canvas');
-  try{JsBarcode(cv,val,{format:S.bcType,displayValue:false,margin:6,height:200,width:4,background:'#ffffff'});}
+  try{JsBarcode(cv,val,{format:S.bcType,displayValue:false,margin:0,height:pxH,width:4,background:'#ffffff'});}
   catch(e){return null;}
   return{url:cv.toDataURL('image/png'),w:cv.width,h:cv.height};
 }
@@ -878,26 +1014,43 @@ function fitFont(doc,t,maxW,s){doc.setFontSize(s);while(doc.getTextWidth(t)>maxW
 document.getElementById('pdf').onclick=()=>{
   const{jsPDF}=window.jspdf;
   const doc=new jsPDF({unit:'in',format:[PW,PH],orientation:ORIENT});
-  const pdfFont=FONT_MAP[S.font]||'helvetica';
-  const bw=S.border/72;
+  const pfN=FONT_MAP[S.fontName]||'helvetica';
+  const pfC=FONT_MAP[S.fontCode]||'helvetica';
+  const bw=(S.border||0.5)/72;
   const tableW=G.cellW*COLS,tableH=G.cellH*ROWS;
   const x0=(PW-tableW)/2,y0=PG_MY_TOP;
-  doc.setLineWidth(bw||0.5/72);doc.setDrawColor(0);
+  doc.setLineWidth(bw);doc.setDrawColor(0);
   for(let i=0;i<=COLS;i++){const x=x0+i*G.cellW;doc.line(x,y0,x,y0+tableH);}
   for(let j=0;j<=ROWS;j++){const y=y0+j*G.cellH;doc.line(x0,y,x0+tableW,y);}
   const data=cells();
+  const innerH=G.cellH-S.mT-S.mB;
+  const gaps=S.gapNB+S.gapBC;
+  const avail=innerH-gaps;
+  const nameH=avail*S.pctName/100, bcH=avail*S.pctBc/100, codeH=avail*S.pctCode/100;
   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
     const d=data[r*COLS+c];if(!d.text&&!d.val)continue;
     const left=x0+c*G.cellW,top=y0+r*G.cellH;
-    const il=left+G.mL,ir=left+G.cellW-G.mR,it=top+G.mT,ib=top+G.cellH-G.mB,iw=ir-il,cx=il+iw/2;
-    let barsTop=it,barsBot=ib;
-    if(d.text){doc.setFont(pdfFont,'bold');const s=fitFont(doc,d.text,iw,9.5);
-      doc.text(d.text,cx,it+s/72*0.82,{align:'center'});barsTop=it+s/72+0.03;}
-    if(d.val){doc.setFont(pdfFont,'normal');const s=fitFont(doc,d.val,iw,8.5);
-      doc.text(d.val,cx,ib-0.02,{align:'center'});barsBot=ib-s/72-0.03;
-      const img=barcodePNG(d.val);if(img){const availH=barsBot-barsTop,availW=iw*0.96;
-        const sc=Math.min(availW/img.w,availH/img.h),dw=img.w*sc,dh=img.h*sc;
-        doc.addImage(img.url,'PNG',cx-dw/2,barsTop+(availH-dh)/2,dw,dh);}}
+    const il=left+G.mL,ir=left+G.cellW-G.mR,it=top+G.mT,iw=ir-il,cx=il+iw/2;
+    let y=it;
+    if(d.text){
+      doc.setFont(pfN,'bold');
+      const maxS=nameH*72*0.85;
+      const fs=fitFont(doc,d.text,iw,Math.min(18,maxS));
+      doc.text(d.text,cx,y+fs/72*0.8,{align:'center'});
+    }
+    y+=nameH+S.gapNB;
+    if(d.val){
+      const img=barcodePNG(d.val,bcH);
+      if(img){const sc=Math.min(iw*0.96/img.w,bcH/img.h),dw=img.w*sc,dh=img.h*sc;
+        doc.addImage(img.url,'PNG',cx-dw/2,y+(bcH-dh)/2,dw,dh);}
+    }
+    y+=bcH+S.gapBC;
+    if(d.val){
+      doc.setFont(pfC,'normal');
+      const maxS=codeH*72*0.85;
+      const fs=fitFont(doc,d.val,iw,Math.min(14,maxS));
+      doc.text(d.val,cx,y+fs/72*0.8,{align:'center'});
+    }
   }
   doc.save('bin_labels.pdf');
 };
@@ -905,6 +1058,7 @@ document.getElementById('pdf').onclick=()=>{
 populateUI(S);
 applyLayout(S);
 rebuildGrid(false);
+refreshHistoryUI();
 show('menu');
 </script>
 </body></html>
