@@ -123,6 +123,22 @@ textarea{width:100%;min-height:120px;background:#0f1116;color:var(--ink);border:
   border:1px solid var(--line);border-radius:6px;padding:7px 14px;font-family:ui-monospace,monospace;font-size:13px;color:var(--mut)}
 .sett-chip b{color:var(--accent2)}
 .sett-sep{height:1px;background:var(--line);margin:4px 16px}
+
+/* uppercase the dynamic subtitle + specs bar */
+#genSub,.specs{text-transform:uppercase}
+
+/* live label preview */
+.lbl-pv-wrap{padding:4px 16px 16px}
+.lbl-pv-title{font-size:12px;color:var(--mut);font-family:ui-monospace,monospace;
+  text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
+.lbl-pv-stage{background:repeating-linear-gradient(45deg,#0c0e12 0 8px,#0f1116 8px 16px);
+  border:1px solid var(--line);border-radius:8px;padding:18px;display:flex;justify-content:center}
+.lbl-box{box-sizing:border-box;border-style:solid;border-color:#000;background:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:space-between;overflow:hidden}
+.lbl-box .lp-text{font-weight:700;color:#000;text-align:center;line-height:1;white-space:nowrap;width:100%;overflow:hidden}
+.lbl-box .lp-bc{flex:1;display:flex;align-items:center;justify-content:center;width:100%;min-height:0;overflow:hidden}
+.lbl-box .lp-bc svg{max-width:100%;max-height:100%}
+.lbl-box .lp-val{color:#000;text-align:center;line-height:1;white-space:nowrap;width:100%;overflow:hidden}
 </style>
 </head><body>
 
@@ -239,11 +255,16 @@ textarea{width:100%;min-height:120px;background:#0f1116;color:var(--ink);border:
           </select>
         </div>
       </div>
+      <div class="lbl-pv-wrap">
+        <div class="lbl-pv-title">Live label preview &mdash; how one label will print</div>
+        <div class="lbl-pv-stage"><div id="lblPreview"></div></div>
+      </div>
       <div class="sett-sep"></div>
       <div class="sett-row">
         <span class="sett-chip">Orientation: <b id="sOrient">—</b></span>
         <span class="sett-chip">Labels: <b id="sCount">—</b></span>
         <button id="saveDef" class="primary" style="margin-left:auto">&#10003; Save as default</button>
+        <button id="revertDef" class="ghost">&#8634; Revert to saved</button>
         <button id="clearDef" class="ghost">&#10005; Clear defaults</button>
       </div>
     </details>
@@ -659,6 +680,14 @@ const FONT_CSS={'helvetica':'Arial,Helvetica,sans-serif','times':'Times New Roma
 
 function loadSaved(){try{const s=JSON.parse(localStorage.getItem('labelDefaults')||'null');
   return s?{...FACTORY,...s}:{...FACTORY};}catch(e){return{...FACTORY};}}
+function hasSaved(){return !!localStorage.getItem('labelDefaults');}
+function savedDateLabel(){
+  const t=localStorage.getItem('labelDefaultsSavedAt');
+  if(!t) return 'not saved yet';
+  const d=new Date(+t);
+  return 'saved '+d.toLocaleDateString()+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+}
+function sampleVal(type){return type==='ITF'?'12345678':'A100-001';}
 
 let S=loadSaved();
 let COLS,ROWS,N,G,PW,PH,ORIENT;
@@ -681,12 +710,35 @@ function applyLayout(s){
   const paperName=s.paper[0].toUpperCase()+s.paper.slice(1);
   const sub=document.getElementById('genSub');
   const specs=document.getElementById('genSpecs');
-  if(sub) sub.innerHTML=paperName+' &bull; '+lay.orient+' &bull; <b>'+COLS+'&times;'+ROWS+'='+N+' labels</b> &bull; '+s.bcType+' &bull; offline';
+  if(sub) sub.innerHTML=paperName+' &bull; '+lay.orient+' &bull; <b>'+COLS+'&times;'+ROWS+'='+N+' labels</b> &bull; '+s.bcType+' &bull; '+savedDateLabel();
   if(specs) specs.innerHTML='<span>cell <b>'+s.cellW+'" &times; '+s.cellH+'"</b></span>'+
     '<span>margins <b>L '+s.mL+'" R '+s.mR+'" T '+s.mT+'" B '+s.mB+'"</b></span>'+
     '<span>border <b>'+s.border+'pt</b></span>';
   const oi=document.getElementById('sOrient'), ci=document.getElementById('sCount');
   if(oi) oi.textContent=lay.orient; if(ci) ci.textContent=COLS+'×'+ROWS+'='+N;
+  renderLabelPreview();
+}
+
+/* live WYSIWYG preview of a single label using current settings */
+function renderLabelPreview(){
+  const host=document.getElementById('lblPreview'); if(!host)return;
+  const ppi=Math.min(360/S.cellW, 150/S.cellH);
+  const w=S.cellW*ppi, h=S.cellH*ppi;
+  const bpx=Math.max(1,S.border/72*ppi);
+  const box=document.createElement('div'); box.className='lbl-box';
+  box.style.width=w+'px'; box.style.height=h+'px';
+  box.style.borderWidth=bpx+'px';
+  box.style.paddingLeft=(S.mL*ppi)+'px'; box.style.paddingRight=(S.mR*ppi)+'px';
+  box.style.paddingTop=(S.mT*ppi)+'px'; box.style.paddingBottom=(S.mB*ppi)+'px';
+  box.style.fontFamily=FONT_CSS[S.font]||FONT_CSS.helvetica;
+  const sv=sampleVal(S.bcType);
+  box.innerHTML='<div class="lp-text">PART A-100</div>'+
+    '<div class="lp-bc"><svg></svg></div>'+
+    '<div class="lp-val">'+sv+'</div>';
+  box.querySelector('.lp-text').style.fontSize=Math.max(6,0.15*ppi)+'px';
+  box.querySelector('.lp-val').style.fontSize=Math.max(5,0.11*ppi)+'px';
+  host.innerHTML=''; host.appendChild(box);
+  try{JsBarcode(box.querySelector('.lp-bc svg'),sv,{format:S.bcType,displayValue:false,margin:0,height:40,width:2,background:'#ffffff'});}catch(e){}
 }
 
 function populateUI(s){
@@ -769,13 +821,22 @@ function cells(){return[...gridEl.querySelectorAll('.cell')].map(c=>({
 document.getElementById('saveDef').onclick=()=>{
   S=settingsFromUI();
   localStorage.setItem('labelDefaults',JSON.stringify(S));
+  localStorage.setItem('labelDefaultsSavedAt',Date.now());
   applyLayout(S);rebuildGrid(true);
   const btn=document.getElementById('saveDef');
   btn.textContent='✓ Saved!';setTimeout(()=>btn.innerHTML='&#10003; Save as default',1500);
 };
 
+document.getElementById('revertDef').onclick=()=>{
+  const btn=document.getElementById('revertDef');
+  if(!hasSaved()){btn.textContent='✓ Nothing saved';setTimeout(()=>btn.innerHTML='&#8634; Revert to saved',1500);return;}
+  S=loadSaved();populateUI(S);applyLayout(S);rebuildGrid(true);
+  btn.textContent='✓ Reverted';setTimeout(()=>btn.innerHTML='&#8634; Revert to saved',1500);
+};
+
 document.getElementById('clearDef').onclick=()=>{
   localStorage.removeItem('labelDefaults');
+  localStorage.removeItem('labelDefaultsSavedAt');
   S={...FACTORY};populateUI(S);applyLayout(S);rebuildGrid(true);
   const btn=document.getElementById('clearDef');
   btn.textContent='✓ Cleared';setTimeout(()=>btn.innerHTML='&#10005; Clear defaults',1500);
